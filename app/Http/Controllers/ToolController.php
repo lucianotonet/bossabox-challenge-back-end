@@ -6,36 +6,121 @@ use App\Tool;
 use App\Tag;
 use Illuminate\Http\Request;
 
+/**
+ * @SWG\Swagger(
+ *     basePath="/api",
+ *     schemes={"http", "https"},
+ *     host=L5_SWAGGER_CONST_HOST,
+ *     @SWG\Info(
+ *         version="1.0.0",
+ *         title="VUTTR",
+ *         description="VUTTR API documentation",
+ *         @SWG\Contact(
+ *             email="tonetlds@gmail.com"
+ *         ),
+ *     )
+ * )
+ */
+
 class ToolController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * @SWG\Get(
+     *      path="/tools",
+     *      operationId="index",
+     *      tags={"Tools"},
+     *      summary="Get list of tools",
+     *      description="Returns list of tools",
+     *      @SWG\Response(
+     *          response=200,
+     *          description="successful operation"
+     *       ),
+     * @SWG\Parameter(
+     *          name="tag",
+     *          description="Name of tag to filter the results of tools",
+     *          required=false,
+     *          type="string",
+     *          in="query"
+     *      ),
+     *       @SWG\Response(response=400, description="Bad request"),
+     *       security={
+     *           {"api_key_security_example": {}}
+     *       }
+     *     )
+     *
+     * Returns list of Tools
      *
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
     {
         if ($request->tag) {
-            $tag = Tag::where('name', $request->tag)->get()->first();
-            if (is_object($tag)) {
-                return $tag->tools;
-            };
-            return [];
+            return $this->getToolsByTag($request->tag);
         };
         return Tool::all();
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    public function getToolsByTag($tagName)
     {
-        //
+        $tagObj = Tag::where('name', $tagName)->get()->first();
+        if (is_object($tagObj)) {
+            return $tagObj->tools;
+        };
+        return [];
     }
 
     /**
+     * @SWG\Post(
+     *      path="/tools",
+     *      operationId="addTool",
+     *      tags={"Tools"},
+     *      summary="Add a new tool",
+     *      description="Returns list of tools",
+     *      @SWG\Response(
+     *          response=200,
+     *          description="successful operation"
+     *       ),
+     *      @SWG\Response(
+     *          response=201,
+     *          description="successful operation"
+     *       ),
+     *      @SWG\Parameter(
+     *          name="title",
+     *          description="",
+     *          required=false,
+     *          type="string",
+     *          in="formData"
+     *      ),
+     *      @SWG\Parameter(
+     *          name="link",
+     *          description="",
+     *          required=false,
+     *          type="string",
+     *          in="formData"
+     *      ),
+     *      @SWG\Parameter(
+     *          name="description",
+     *          description="",
+     *          required=false,
+     *          type="string",
+     *          in="formData"
+     *      ),
+     *      @SWG\Parameter(
+     *          name="tags",
+     *          description="",
+     *          required=false,
+     *          type="array",
+     *          in="formData",
+     *          items={
+     *              {"type":"string"}
+     *          },
+     *      ),
+     *       @SWG\Response(response=400, description="Bad request"),
+     *       security={
+     *           {"api_key_security_example": {}}
+     *       }
+     *     )
+     *
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -50,7 +135,8 @@ class ToolController extends Controller
         ];
         $tool = Tool::create($newTool);
         if ($request->tags) {
-            foreach ($request->tags as $tagString) {
+            $tags = is_string($request->tags) ? explode(',', $request->tags) : $request->tags;
+            foreach ($tags as $tagString) {
                 $tag = Tag::firstOrCreate(['name' => $tagString]);
                 $tool->tags()->attach($tag);
             }
@@ -60,40 +146,33 @@ class ToolController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * @SWG\Delete(
+     *      path="/tools/{id}",
+     *      operationId="deleteTool",
+     *      tags={"Tools"},
+     *      summary="Remove a tool by id",
+     *      description="Remove a tool by a passing id",
+     *      @SWG\Response(
+     *          response=200,
+     *          description="successful operation"
+     *       ),
+     *      @SWG\Response(
+     *          response=201,
+     *          description="successful operation"
+     *       ),
+     *      @SWG\Parameter(
+     *          name="id",
+     *          description="Id of tool to exclude",
+     *          required=true,
+     *          type="integer",
+     *          in="path"
+     *      ),
+     *       @SWG\Response(response=400, description="Bad request"),
+     *       security={
+     *           {"api_key_security_example": {}}
+     *       }
+     *     )
      *
-     * @param  \App\Tool  $tool
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Tool $tool)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Tool  $tool
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Tool $tool)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Tool  $tool
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Tool $tool)
-    {
-        //
-    }
-
-    /**
      * Remove the specified resource from storage.
      *
      * @param  \App\Tool  $tool
